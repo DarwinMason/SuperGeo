@@ -1,51 +1,27 @@
-﻿(defun ceiling (x / i)
-  ;; Просто реализиране на математическата функция ceiling
-  (setq i (fix x))
-  (if (< x i)
-    (+ i 1)
-    i)
-)
+﻿(defun cross (o a b)
+  (- (* (- (car a) (car o)) (- (cadr b) (cadr o)))
+     (* (- (car b) (car o)) (- (cadr a) (cadr o)))))
 
-(defun cross2d (a b c)
-  ;; 2D cross product of vectors AB and AC
-  (- (* (- (car b) (car a)) (- (cadr c) (cadr a)))
-     (* (- (cadr b) (cadr a)) (- (car c) (car a))))
-)
-
-(defun convex-hull (pts / start hull point next candidate done)
-  ;; Returns list of points forming the convex hull of pts (Jarvis march)
-  (if (< (length pts) 3)
-    pts
-    (progn
-      ;; find leftmost lowest point
+(defun convex-hull (pts / hull start cur next)
+  (cond
+    ((< (length pts) 3) pts)
+    (t
       (setq start (car (vl-sort pts
-                                '(lambda (p q)
-                                   (if (= (car p) (car q))
-                                     (< (cadr p) (cadr q))
-                                     (< (car p) (car q)))))))
-      (setq hull (list start))
-      (setq point start)
-      (setq done nil)
-      (while (not done)
-        (setq next nil)
-        (foreach candidate pts
-          (if (not (equal candidate point))
-            (cond
-              ((null next) (setq next candidate))
-              ((> 0 (cross2d point next candidate)) (setq next candidate))
-            )
-          )
-        )
-        (if (or (null next) (equal next start))
-          (setq done T)
-          (progn
-            (setq hull (cons next hull))
-            (setq point next)))
-      )
-      (reverse hull)
-    )
-  )
-)
+                                '(lambda (p1 p2)
+                                    (if (= (car p1) (car p2))
+                                        (< (cadr p1) (cadr p2))
+                                        (< (car p1) (car p2)))))))
+      (setq hull nil
+            cur start)
+      (repeat 1000
+        (setq hull (append hull (list cur))
+              next (car pts))
+        (foreach p pts
+          (if (or (= next cur) (> (cross cur next p) 0))
+            (setq next p)))
+        (setq cur next)
+        (if (equal cur start 1e-8) (return)))
+      hull)))
 
 (defun c:ContourLaplace (/ rows cols ss n ptList minX maxX minY maxY p1 p2 dx dy
                             grid fixed k ent entData pt x y z row col
@@ -53,10 +29,10 @@
                             left right up down newVal curVal delta
                             contourInterval minZ maxZ start end levels lev
                             points z1 z2 z3 z4 xi yi hull)
-  
+
   (setq rows 100
         cols 100)
-  
+
   ;; Селектиране на точки и блокове
   (princ "\nИзберете точки (POINT) или блокове (INSERT): ")
   (setq ss (ssget '((0 . "POINT,INSERT"))))
@@ -158,7 +134,7 @@
                       (setq i (1+ i)))
               (setq iter (1+ iter))
       )
-      
+
       ;; създаване на 3D мрежа
             (command "_.3DMESH" rows cols)
             (setq i 0)
@@ -197,7 +173,7 @@
                 (setq j (1+ j)))
               (setq i (1+ i))
             )
-      
+
       ;; Формиране на списък от нива за изолиниите
             (setq levels nil
                   start (fix (/ minZ contourInterval))
@@ -260,32 +236,4 @@
       (princ "\nГотово.")
     )
   )
-)
-
-(defun cross (o a b)
-  (- (* (- (car a) (car o)) (- (cadr b) (cadr o)))
-    (* (- (car b) (car o)) (- (cadr a) (cadr o)))
-  )
-)
-
-(defun convex-hull (pts / hull start cur next)
-  (cond
-    ((< (length pts) 3) pts)
-    (t
-      (setq start (car (vl-sort pts
-                              '(lambda (p1 p2)
-                                  (if (= (car p1) (car p2))
-                                      (< (cadr p1) (cadr p2))
-                                      (< (car p1) (car p2)))))))
-      (setq hull nil
-          cur start)
-      (repeat 1000
-        (setq hull (append hull (list cur))
-            next (car pts))
-        (foreach p pts
-          (if (or (= next cur) (> (cross cur next p) 0))
-            (setq next p)))
-        (setq cur next)
-        (if (equal cur start 1e-8) (return)))
-      hull))
 )
