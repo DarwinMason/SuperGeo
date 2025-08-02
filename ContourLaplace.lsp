@@ -68,8 +68,19 @@
       (setq dy (/ (- maxY minY) (float (1- rows))))
 
       ;; Създаване на двумерни масиви (SafeArray) за височините и фиксираните клетки
-      (setq grid  (vlax-make-safearray vlax-vbDouble (cons 0 (1- rows)) (cons 0 (1- cols))))
-      (setq fixed (vlax-make-safearray vlax-vbInteger (cons 0 (1- rows)) (cons 0 (1- cols))))
+	  (setq grid
+	    (vlax-make-safearray
+			vlax-vbDouble
+		  (list
+		    (cons 0 (1- rows))
+		    (cons 0 (1- cols)))))
+
+	  (setq fixed
+	    (vlax-make-safearray
+			vlax-vbInteger
+		  (list
+			(cons 0 (1- rows))
+			(cons 0 (1- cols)))))
 
       ;; Инициализация на масивите
       (setq i 0)
